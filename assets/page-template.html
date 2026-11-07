@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="课件复习网页骨架：步骤切换 + 矩阵交互 + 考点模板">
+<title>课件复习网页 · 可复用骨架</title>
+<style>
+/* ========== 1. 设计变量（浅色/深色） ========== */
+:root{
+  --bg:#f3f6fa; --surface:#fff; --surface2:#eef3f8; --surface3:#e2e9f1;
+  --ink:#172431; --muted:#5c6b7c; --faint:#8795a5;
+  --line:#dce5ee; --accent:#315b8a; --accent2:#4d7fb3; --accent-soft:#e8f0fa;
+  --gold:#a56b12; --gold-soft:#fdf2da; --gold-line:#ecd3a0;
+  --green:#2a7255; --green-soft:#e5f4ec; --green-line:#bfe0cf;
+  --red:#a94535; --red-soft:#fdece8;
+  --hl:#ffedc2; --hl-ink:#7a4d06;
+  --shadow:0 1px 2px rgba(20,35,52,.05),0 18px 40px -26px rgba(20,35,52,.32);
+  --r:16px; --cw:48px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d141c; --surface:#151e28; --surface2:#1d2935; --surface3:#263441;
+    --ink:#e2eaf3; --muted:#a2b2c4; --faint:#728396;
+    --line:#2a3948; --accent:#8db6e2; --accent2:#a7c8e9; --accent-soft:#1b2c3f;
+    --gold:#e2b566; --gold-soft:#362a15; --gold-line:#57431d;
+    --green:#83c9a9; --green-soft:#173126; --green-line:#2d5843;
+    --red:#f0a08e; --red-soft:#3a211c;
+    --hl:#4a3716; --hl-ink:#ffd98c;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 18px 40px -26px rgba(0,0,0,.65);
+  }
+}
+
+/* ========== 2. 基础 ========== */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:auto}
+body{
+  font-family:system-ui,-apple-system,"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--ink);font-size:15.5px;line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font:inherit;color:inherit}
+[id]{scroll-margin-top:76px}
+.shell{max-width:1100px;margin:0 auto;padding:0 22px}
+.mono{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-variant-numeric:tabular-nums}
+.topbar{
+  position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.topbar .shell{display:flex;align-items:center;gap:14px;min-height:58px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .logo{
+  width:32px;height:32px;border-radius:9px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--accent),#5d8fc0);color:#fff;font-weight:800;font-size:11px;
+}
+.brand b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand small{display:block;font-size:11px;color:var(--faint)}
+.nav{display:flex;gap:4px;margin-left:auto}
+.nav a{padding:6px 10px;border-radius:8px;font-size:13px;color:var(--muted)}
+.nav a:hover{background:var(--surface2);text-decoration:none;color:var(--ink)}
+@media (max-width:760px){.nav{display:none}.brand small{display:none}}
+
+/* ========== 3. 首屏/章节 ========== */
+.hero{padding:44px 0 26px;border-bottom:1px solid var(--line);background:radial-gradient(700px 320px at 15% 0%,var(--accent-soft),transparent 65%)}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:1.4px;color:var(--accent)}
+.hero h1{font-size:clamp(28px,4vw,44px);line-height:1.2;margin:8px 0 10px;letter-spacing:-.4px}
+.hero p{color:var(--muted);max-width:720px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chips span{font-size:12px;color:var(--muted);border:1px solid var(--line);background:var(--surface);padding:4px 10px;border-radius:999px}
+.section{padding:42px 0 6px}
+.section h2{font-size:clamp(22px,2.7vw,30px);line-height:1.25;margin-bottom:6px}
+.section .lead{color:var(--muted);font-size:13.5px;margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 20px;margin:12px 0}
+.card h3{font-size:17px;margin-bottom:8px}
+.card p{color:var(--muted);font-size:14px}
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface2)}
+.tag.gold{color:var(--gold);border-color:var(--gold-line);background:var(--gold-soft)}
+.tag.green{color:var(--green);border-color:var(--green-line);background:var(--green-soft)}
+
+/* ========== 4. 知识点/表格/公式 ========== */
+.kp{border-left:3px solid var(--accent);padding-left:14px;margin:18px 0}
+.kp h3{font-size:17px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.kp p{color:var(--muted);font-size:14px;margin:6px 0}
+.kp ul{margin:8px 0 8px 20px;color:var(--muted);font-size:14px}
+.kp li{margin:4px 0}
+.why{background:var(--gold-soft);border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:10px 13px;margin:10px 0;font-size:13px;color:var(--muted)}
+.why b{color:var(--gold)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:12px 0;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:460px}
+th{background:var(--surface2);color:var(--muted);font-size:12px;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.formula{display:block;overflow-x:auto;white-space:nowrap;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px 13px;margin:10px 0;font-family:ui-monospace,Consolas,monospace;font-size:13.5px;text-align:center}
+.note{font-size:12.5px;color:var(--faint);margin-top:6px}
+
+/* ========== 5. 步骤 + 矩阵 ========== */
+.step-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.step-tab{text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--surface);cursor:pointer;transition:.2s}
+.step-tab b{display:block;font-size:13px}
+.step-tab small{font-size:11px;color:var(--faint)}
+.step-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.step-tab.active small{color:rgba(255,255,255,.75)}
+@media (max-width:640px){.step-tabs{grid-template-columns:1fr}}
+.step-panel{display:none}
+.step-panel.active{display:block;animation:in .3s ease both}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.step-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:20px;align-items:start}
+@media (max-width:960px){.step-grid{grid-template-columns:1fr}}
+.mat-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 10px 8px;box-shadow:0 8px 22px -18px rgba(20,35,52,.35);min-width:0}
+.mat-title{display:flex;gap:8px;align-items:baseline;margin-bottom:5px}
+.mat-title b{font-size:14px}
+.mat-title span{font-size:10px;color:var(--faint);font-family:ui-monospace,monospace}
+.mat-top{display:grid;grid-template-columns:repeat(var(--cols),var(--cw));gap:2px;margin-left:26px;padding:0 6px;margin-bottom:3px;font-size:10px;color:var(--faint);text-align:center;font-family:ui-monospace,monospace}
+.mat-body{display:flex;gap:5px;align-items:stretch;overflow-x:auto;padding-bottom:2px}
+.mat-left{display:grid;grid-template-rows:repeat(var(--rows),36px);gap:2px;width:22px;padding:4px 0;align-items:center;justify-content:end;font-size:10px;color:var(--faint);font-family:ui-monospace,monospace;flex:none}
+.matrix{display:grid;grid-template-columns:repeat(var(--cols),var(--cw));grid-auto-rows:36px;gap:2px;padding:4px 6px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);position:relative;flex:none}
+.matrix::before,.matrix::after{content:"";position:absolute;left:-5px;right:-5px;height:2px;background:var(--ink)}
+.matrix::before{top:0}.matrix::after{bottom:0}
+.mcell{border:1px solid transparent;background:none;border-radius:6px;display:grid;place-items:center;font:600 12.5px/1.2 ui-monospace,Consolas,monospace;color:var(--ink);cursor:pointer;padding:0;transition:.15s}
+.mcell:hover{background:var(--surface2)}
+.mcell.hl{background:var(--hl);border-color:var(--gold);color:var(--hl-ink);font-weight:800}
+.calc{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-top:10px;min-height:76px}
+.calc b{color:var(--accent)}
+.calc .eq{font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.9;margin-top:3px;overflow-x:auto}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--muted);font-size:12.5px;cursor:pointer;transition:.18s}
+.btn:hover{border-color:var(--accent2);color:var(--accent);background:var(--accent-soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.primary:hover{opacity:.92;color:#fff;background:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.progress{height:5px;background:var(--surface3);border-radius:99px;overflow:hidden;flex:1;min-width:100px;align-self:center}
+.progress i{display:block;height:100%;width:33%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:.3s}
+
+/* ========== 6. 考试卡/答案 ========== */
+.exam{background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:14px;padding:16px 18px;margin:16px 0}
+.exam h3{color:var(--gold);font-size:15px;margin-bottom:8px}
+.exam ol{margin:6px 0 0 20px;font-size:13.5px;color:var(--muted)}
+.exam li{margin:4px 0}
+.answer{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:14px 0}
+pre{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;font-size:12px;line-height:1.8;font-family:ui-monospace,Consolas,monospace;white-space:pre}
+.footer{border-top:1px solid var(--line);margin-top:48px;padding:22px 0 34px;color:var(--faint);font-size:12px}
+.footer .shell{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media print{
+  .topbar,.nav,.controls,.step-tabs,.footer{display:none!important}
+  .step-panel{display:block!important;break-before:page}
+  body{background:#fff;color:#000}.card,.mat-card,.exam{box-shadow:none}
+  pre{white-space:pre-wrap;word-break:break-all}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="shell">
+    <div class="brand">
+      <span class="logo">DEMO</span>
+      <div><b>课件复习网页 · 可复用骨架</b><small>章节 / 知识点 / 步骤 / 矩阵 / 考点</small></div>
+    </div>
+    <nav class="nav">
+      <a href="#kp">知识点</a>
+      <a href="#steps">分步演示</a>
+      <a href="#exam">考点模板</a>
+      <a href="#answer">答案</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="shell">
+    <div class="eyebrow">COURSEWARE → REVIEW PAGE</div>
+    <h1>把一页课件，讲成一个可复习的网页</h1>
+    <p>这是一个可复制骨架：把示例内容替换成你的章节、知识点和例题；保留结构、交互和样式即可。</p>
+    <div class="chips"><span>单文件</span><span>零依赖</span><span>步骤切换</span><span>矩阵可点击</span><span>手机可用</span></div>
+  </div>
+</section>
+
+<main class="shell">
+
+  <!-- 1. 章节信息 -->
+  <section class="section">
+    <h2>第 X 章 · 章节标题</h2>
+    <p class="lead">一句话导语：这一章解决什么问题、和前后章节什么关系。</p>
+    <div class="card">
+      <h3>本章学习目标</h3>
+      <p>① 理解…… ② 掌握…… ③ 能计算…… ④ 能区分……</p>
+    </div>
+  </section>
+
+  <!-- 2. 知识点 -->
+  <section class="section" id="kp">
+    <h2>X.1 节标题</h2>
+    <p class="lead">节导语：本节的核心问题。</p>
+
+    <div class="kp">
+      <h3>知识点标题 <span class="tag gold">掌握</span><span class="tag">高频考点</span></h3>
+      <p><b>一句话结论：</b>把这一节最重要的结论写成一句可复述的话。</p>
+      <div class="why"><b>为什么：</b>解释动机/直觉/与前后知识的联系。不要只写“根据公式”。</div>
+      <p><b>怎么做：</b>步骤 1 → 步骤 2 → 步骤 3。</p>
+      <span class="formula">示例公式：A = KᵀQ　（3×4 → 4×4）</span>
+      <div class="tbl-wrap"><table>
+        <tr><th>对比项</th><th>方案 A</th><th>方案 B</th></tr>
+        <tr><td><b>核心</b></td><td>…</td><td>…</td></tr>
+        <tr><td><b>适用</b></td><td>…</td><td>…</td></tr>
+        <tr><td><b>易错</b></td><td>…</td><td>…</td></tr>
+      </table></div>
+      <p class="note">来源：PPT 第 X 页。</p>
+    </div>
+  </section>
+
+  <!-- 3. 分步演示 -->
+  <section class="section" id="steps">
+    <h2>X.2 分步演示 · 3 步讲清一个计算</h2>
+    <p class="lead">把示例数字换掉即可；矩阵格子可点击查看每一项。</p>
+
+    <div class="step-tabs" role="tablist">
+      <button class="step-tab active" data-step="0" role="tab" aria-selected="true"><b>1. 写矩阵</b><small>先定维数</small></button>
+      <button class="step-tab" data-step="1" role="tab" aria-selected="false"><b>2. 做乘法</b><small>逐项计算</small></button>
+      <button class="step-tab" data-step="2" role="tab" aria-selected="false"><b>3. 得结果</b><small>检查维数</small></button>
+    </div>
+
+    <div class="step-panel active" data-step="0">
+      <div class="step-grid">
+        <div>
+          <h3>第 1 步：写矩阵</h3>
+          <p>说明每个矩阵的维数、每个位置的来源。把“为什么这样排”讲清楚。</p>
+          <div class="why"><b>为什么：</b>列向量/行向量约定决定后面乘法方向。</div>
+          <div class="calc" id="calc0"><b>点击右边矩阵格子</b><div class="note">这里显示该项的来源。</div></div>
+        </div>
+        <div>
+          <div class="mat-card" style="--cols:3;--rows:3">
+            <div class="mat-title"><b>A</b><span>3×3</span></div>
+            <div class="mat-top" aria-hidden="true"><span>1</span><span>2</span><span>3</span></div>
+            <div class="mat-body">
+              <div class="mat-left" aria-hidden="true"><span>1</span><span>2</span><span>3</span></div>
+              <div class="matrix" id="matrix0" role="group" aria-label="示例矩阵 A"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-panel" data-step="1">
+      <div class="step-grid">
+        <div>
+          <h3>第 2 步：做乘法</h3>
+          <p>说明乘法的顺序、每一项由谁乘谁；点击格子查看算式。</p>
+          <div class="calc" id="calc1"><b>点击右边矩阵格子</b><div class="note">这里显示乘法过程。</div></div>
+        </div>
+        <div>
+          <div class="mat-card" style="--cols:3;--rows:3">
+            <div class="mat-title"><b>B = A·A</b><span>3×3</span></div>
+            <div class="mat-top" aria-hidden="true"><span>1</span><span>2</span><span>3</span></div>
+            <div class="mat-body">
+              <div class="mat-left" aria-hidden="true"><span>1</span><span>2</span><span>3</span></div>
+              <div class="matrix" id="matrix1" role="group" aria-label="示例矩阵 B"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-panel" data-step="2">
+      <div class="step-grid">
+        <div>
+          <h3>第 3 步：得结果</h3>
+          <p>把结果写完整，检查维数/归一化/符号。</p>
+          <div class="calc" id="calc2"><b>最终结果</b><div class="note">这里放结论和检查项。</div></div>
+        </div>
+        <div>
+          <div class="mat-card" style="--cols:3;--rows:3">
+            <div class="mat-title"><b>结果 C</b><span>3×3</span></div>
+            <div class="mat-top" aria-hidden="true"><span>1</span><span>2</span><span>3</span></div>
+            <div class="mat-body">
+              <div class="mat-left" aria-hidden="true"><span>1</span><span>2</span><span>3</span></div>
+              <div class="matrix" id="matrix2" role="group" aria-label="示例矩阵 C"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="prev">← 上一步</button>
+      <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+      <span class="note" id="count">1 / 3</span>
+      <button class="btn primary" id="next">下一步 →</button>
+    </div>
+  </section>
+
+  <!-- 4. 考点模板 -->
+  <section class="section" id="exam">
+    <h2>考场模板</h2>
+    <div class="exam">
+      <h3>答题纸上的 6 个动作</h3>
+      <ol>
+        <li>写维度。</li>
+        <li>写已知矩阵/公式。</li>
+        <li>做第一步计算。</li>
+        <li>做第二步计算。</li>
+        <li>写最终结果。</li>
+        <li>检查：维数/归一化/符号/舍入。</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>交卷前 30 秒检查</h3>
+      <p>□ 维数对　□ 公式方向对　□ 归一化对　□ 符号对　□ 舍入说明写了</p>
+    </div>
+  </section>
+
+  <!-- 5. 答案 -->
+  <section class="section" id="answer">
+    <h2>标准答案</h2>
+    <div class="answer">
+      <pre>把完整答案写在这里，或放可复制的文本。</pre>
+      <p class="note">提示：把本页的示例内容替换成你的课件内容，保留结构与交互。</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="shell"><span>课件复习网页骨架 · 可复制到任意单文件项目</span><span>无外部依赖</span></div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ===== 1. 数据（换成你的矩阵/数值） ===== */
+  const A = [[1,2,3],[4,5,6],[7,8,9]];
+  const B = [[30,36,42],[66,81,96],[102,126,150]];
+  const C = [[1,0,0],[0,1,0],[0,0,1]];
+
+  /* ===== 2. 渲染矩阵 ===== */
+  function renderMatrix(el, data, name){
+    el.innerHTML = "";
+    el.style.setProperty("--cols", data[0].length);
+    data.forEach((row, i) => {
+      row.forEach((v, j) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "mcell";
+        b.dataset.i = i; b.dataset.j = j;
+        b.textContent = v;
+        b.setAttribute("aria-label", name + " 第" + (i+1) + "行第" + (j+1) + "列：" + v);
+        el.appendChild(b);
+      });
+    });
+  }
+
+  const m0 = document.getElementById("matrix0");
+  const m1 = document.getElementById("matrix1");
+  const m2 = document.getElementById("matrix2");
+  renderMatrix(m0, A, "A");
+  renderMatrix(m1, B, "B");
+  renderMatrix(m2, C, "C");
+
+  /* ===== 3. 点击矩阵格子 → 显示来源 ===== */
+  function clearHL(el){ el.querySelectorAll(".mcell").forEach(c=>c.classList.remove("hl")); }
+  [m0,m1,m2].forEach((m, idx) => {
+    m.addEventListener("click", e => {
+      const c = e.target.closest(".mcell");
+      if(!c) return;
+      clearHL(m); c.classList.add("hl");
+      const i = +c.dataset.i, j = +c.dataset.j;
+      const box = document.getElementById("calc" + idx);
+      if(idx === 0){
+        box.innerHTML = `<b>A[${i+1},${j+1}] = ${A[i][j]}</b>
+          <div class="eq">行 ${i+1}、列 ${j+1} 的数值；写清楚它的来源。</div>
+          <div class="note">替换成你的点积/来源说明。</div>`;
+      } else if(idx === 1){
+        const terms = A[i].map((v,k)=>`${v}×${A[k][j]}`).join(" + ");
+        box.innerHTML = `<b>B[${i+1},${j+1}] = ${B[i][j]}</b>
+          <div class="eq">${terms} = ${B[i][j]}</div>
+          <div class="note">这就是矩阵乘法的“行 × 列”过程。</div>`;
+      } else {
+        box.innerHTML = `<b>C[${i+1},${j+1}] = ${C[i][j]}</b>
+          <div class="eq">检查：结果维数是否与题目要求一致？</div>
+          <div class="note">替换成你的结论/检查项。</div>`;
+      }
+    });
+  });
+
+  /* ===== 4. 步骤切换 ===== */
+  const tabs = [...document.querySelectorAll(".step-tab")];
+  const panels = [...document.querySelectorAll(".step-panel")];
+  let step = 0;
+  function showStep(n){
+    step = Math.max(0, Math.min(panels.length - 1, n));
+    tabs.forEach((t,i)=>{
+      t.classList.toggle("active", i===step);
+      t.setAttribute("aria-selected", String(i===step));
+    });
+    panels.forEach((p,i)=>p.classList.toggle("active", i===step));
+    document.getElementById("bar").style.width = ((step+1)/panels.length*100) + "%";
+    document.getElementById("count").textContent = (step+1) + " / " + panels.length;
+    document.getElementById("prev").disabled = step === 0;
+    document.getElementById("next").disabled = step === panels.length - 1;
+  }
+  tabs.forEach(t=>t.addEventListener("click", ()=>showStep(+t.dataset.step)));
+  document.getElementById("prev").addEventListener("click", ()=>showStep(step-1));
+  document.getElementById("next").addEventListener("click", ()=>showStep(step+1));
+  document.addEventListener("keydown", e=>{
+    if(e.key==="ArrowLeft") showStep(step-1);
+    if(e.key==="ArrowRight") showStep(step+1);
+  });
+  showStep(0);
+})();
+</script>
+</body>
+</html>
